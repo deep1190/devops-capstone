@@ -1,0 +1,14 @@
+.git
+.github
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.venv
+terraform
+ansible
+k8s
+monitoring
+docs
+scripts
+app/tests
+*.md
