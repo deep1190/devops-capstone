@@ -1,0 +1,28 @@
+groups:
+  - name: taskflow.slo
+    rules:
+      - alert: TaskflowHighErrorRate
+        expr: |
+          sum(rate(taskflow_http_requests_total{status=~"5.."}[2m]))
+            / clamp_min(sum(rate(taskflow_http_requests_total[2m])), 0.001) > 0.05
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: "TaskFlow 5xx ratio above 5% for 2 minutes"
+          runbook: "docs/RUNBOOK.md#high-error-rate"
+      - alert: TaskflowHighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(taskflow_http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "TaskFlow p95 latency above 500ms for 5 minutes"
+          runbook: "docs/RUNBOOK.md#high-latency"
+      - alert: TaskflowDown
+        expr: (sum(up{job=~"taskflow.*"}) or vector(0)) == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "No TaskFlow instance is being scraped"
+          runbook: "docs/RUNBOOK.md#service-down"
