@@ -1,0 +1,4 @@
+ok  health + readiness
+ok  created task 2
+ok  CRUD, validation, metrics
+SMOKE TEST PASSED (http://localhost:18080)

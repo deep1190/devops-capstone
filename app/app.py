@@ -16,7 +16,6 @@ import uuid
 from datetime import datetime, timezone
 
 from flask import Flask, Response, g, jsonify, request
-
 from metrics import Counter, Gauge, Histogram, Registry
 
 APP_VERSION = os.getenv("APP_VERSION", "dev")

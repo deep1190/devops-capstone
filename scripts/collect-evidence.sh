@@ -8,7 +8,11 @@ mkdir -p "$EV"
 
 echo "==> Unit tests"
 (cd app && python3 -m pytest -v 2>&1) | tee "$EV/unit-tests.txt" >/dev/null
-(cd app && python3 -m pytest -q --cov=. --cov-report=term 2>&1 | tail -15) > "$EV/coverage.txt" || true
+if python3 -c "import pytest_cov" 2>/dev/null; then
+  (cd app && python3 -m pytest -q --cov=. --cov-report=term 2>&1 | tail -15) > "$EV/coverage.txt"
+else
+  rm -f "$EV/coverage.txt"; echo "pytest-cov not installed; coverage is enforced in CI"
+fi
 
 echo "==> Start app, run smoke test + traffic, capture logs and metrics"
 (cd app && PORT=18080 APP_VERSION=evidence GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo local) \

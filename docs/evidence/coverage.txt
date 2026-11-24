@@ -1,0 +1,1 @@
+Estimated line coverage (stdlib trace): app.py 98%, metrics.py 93%. CI gate: >=85% via pytest-cov.

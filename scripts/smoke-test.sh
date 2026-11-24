@@ -20,6 +20,7 @@ echo "ok  created task $id"
 [ "$(code -X PUT "$BASE/api/tasks/$id" -H 'Content-Type: application/json' -d '{"done":true}')" = 200 ] || fail "update task"
 [ "$(code -X POST "$BASE/api/tasks" -H 'Content-Type: application/json' -d '{}')" = 400 ] || fail "validation"
 [ "$(code -X DELETE "$BASE/api/tasks/$id")" = 204 ] || fail "delete task"
-curl -s "$BASE/metrics" | grep -q '^taskflow_http_requests_total' || fail "/metrics"
+metrics=$(curl -s "$BASE/metrics")
+grep -q '^taskflow_http_requests_total' <<<"$metrics" || fail "/metrics"
 echo "ok  CRUD, validation, metrics"
 echo "SMOKE TEST PASSED ($BASE)"
