@@ -1,0 +1,75 @@
+# Prepares a fresh Ubuntu/Debian host with every tool the platform needs.
+# Run:  ansible-playbook -i ansible/inventory.ini ansible/bootstrap-host.yml --ask-become-pass
+- name: Bootstrap DevOps workstation / build host
+  hosts: devops_hosts
+  become: true
+  vars:
+    kubectl_version: "v1.31.2"
+    kind_version: "v0.25.0"
+    terraform_version: "1.10.3"
+    bin_dir: /usr/local/bin
+    arch: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else 'amd64' }}"
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name: [docker.io, git, curl, unzip, make, python3-pip, apache2-utils]
+        state: present
+        update_cache: true
+
+    - name: Enable and start Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Allow the login user to run Docker
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: true
+
+    - name: Install kubectl
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ arch }}/kubectl"
+        dest: "{{ bin_dir }}/kubectl"
+        mode: "0755"
+
+    - name: Install kind
+      ansible.builtin.get_url:
+        url: "https://kind.sigs.k8s.io/dl/{{ kind_version }}/kind-linux-{{ arch }}"
+        dest: "{{ bin_dir }}/kind"
+        mode: "0755"
+
+    - name: Install Terraform
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_{{ arch }}.zip"
+        dest: "{{ bin_dir }}"
+        remote_src: true
+        mode: "0755"
+        creates: "{{ bin_dir }}/terraform"
+
+    - name: Install Helm
+      ansible.builtin.shell: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: "{{ bin_dir }}/helm"
+
+    - name: Install Argo Rollouts kubectl plugin
+      ansible.builtin.get_url:
+        url: "https://github.com/argoproj/argo-rollouts/releases/latest/download/kubectl-argo-rollouts-linux-{{ arch }}"
+        dest: "{{ bin_dir }}/kubectl-argo-rollouts"
+        mode: "0755"
+
+    - name: Install Trivy (image/IaC scanner)
+      ansible.builtin.shell: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b {{ bin_dir }}
+      args:
+        creates: "{{ bin_dir }}/trivy"
+
+    - name: Verify tool versions
+      ansible.builtin.command: "{{ item }}"
+      loop:
+        - docker --version
+        - kubectl version --client
+        - kind version
+        - terraform version
+        - helm version --short
+      changed_when: false

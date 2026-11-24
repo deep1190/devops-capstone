@@ -1,0 +1,16 @@
+# kind-specific: run the controller on the labelled control-plane node via hostPort.
+controller:
+  hostPort:
+    enabled: true
+  service:
+    type: NodePort
+  nodeSelector:
+    ingress-ready: "true"
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Equal
+      effect: NoSchedule
+  publishService:
+    enabled: false
+  metrics:
+    enabled: true

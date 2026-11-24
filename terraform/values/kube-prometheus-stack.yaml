@@ -1,0 +1,36 @@
+# Discover ServiceMonitors/PrometheusRules from every namespace (incl. "taskflow"),
+# not only those labelled with this Helm release.
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    retention: 7d
+grafana:
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+  # Loki is added as a second datasource so metrics and logs sit in one UI.
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.monitoring.svc.cluster.local:3100
+alertmanager:
+  config:
+    route:
+      receiver: default
+      group_by: [alertname]
+      group_wait: 30s
+      repeat_interval: 4h
+      routes:
+        - matchers: ['severity="critical"']
+          receiver: default
+    receivers:
+      # Replace with Slack / email / PagerDuty in a real deployment.
+      - name: default
+        webhook_configs:
+          - url: http://alert-sink.monitoring.svc.cluster.local:8080/alerts
+            send_resolved: true

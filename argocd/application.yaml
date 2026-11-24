@@ -1,0 +1,29 @@
+# GitOps: Argo CD watches this repo and keeps the cluster equal to k8s/overlays/prod.
+# CI only ever changes the image tag in that overlay; it never touches the cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskflow
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_GH_USER/devops-capstone.git
+    targetRevision: main
+    path: k8s/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskflow
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  ignoreDifferences:
+    # The HPA owns replica count, Rollouts owns the pod hash: don't fight them.
+    - group: argoproj.io
+      kind: Rollout
+      jsonPointers:
+        - /spec/replicas

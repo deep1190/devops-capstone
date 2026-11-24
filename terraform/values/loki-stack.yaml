@@ -1,0 +1,20 @@
+loki:
+  enabled: true
+  persistence:
+    enabled: false   # local demo; enable + size a PVC for real use
+promtail:
+  enabled: true      # DaemonSet tails /var/log/pods and parses container JSON logs
+  config:
+    snippets:
+      pipelineStages:
+        - cri: {}
+        - json:
+            expressions:
+              level: level
+              request_id: request_id
+        - labels:
+            level:
+grafana:
+  enabled: false     # Grafana comes from kube-prometheus-stack
+prometheus:
+  enabled: false

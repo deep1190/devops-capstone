@@ -1,0 +1,36 @@
+# Stand-in Alertmanager receiver: logs every webhook it receives (visible in Loki/kubectl logs).
+# In production, replace the webhook in terraform/values/kube-prometheus-stack.yaml with Slack/PagerDuty/email.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-sink
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: alert-sink}
+  template:
+    metadata:
+      labels: {app: alert-sink}
+    spec:
+      containers:
+        - name: echo
+          image: mendhak/http-https-echo:35
+          ports:
+            - containerPort: 8080
+          env:
+            - {name: LOG_WITHOUT_NEWLINE, value: "true"}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 96Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-sink
+  namespace: monitoring
+spec:
+  selector: {app: alert-sink}
+  ports:
+    - port: 8080
+      targetPort: 8080
