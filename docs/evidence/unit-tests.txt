@@ -22,4 +22,4 @@ tests/test_app.py::test_metrics_endpoint_not_self_counted PASSED         [ 87%]
 tests/test_app.py::test_fail_rate_injects_500s_on_api_only PASSED        [ 93%]
 tests/test_app.py::test_version_endpoint PASSED                          [100%]
 
-============================== 16 passed in 0.21s ==============================
+============================== 16 passed in 0.18s ==============================

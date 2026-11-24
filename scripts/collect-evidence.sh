@@ -16,7 +16,7 @@ fi
 
 echo "==> Start app, run smoke test + traffic, capture logs and metrics"
 (cd app && PORT=18080 APP_VERSION=evidence GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo local) \
-  python3 -c "
+  exec python3 -c "
 import app
 app.app.run(port=18080)
 " > "../$EV/sample-app.log" 2>&1) &

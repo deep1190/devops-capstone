@@ -1,0 +1,24 @@
+flowchart TB
+  Dev([Developer]) -->|1. git push / PR| GH[(GitHub repository)]
+  GH -->|2. trigger| CI
+  subgraph CI[GitHub Actions pipeline]
+    direction LR
+    T[Lint + tests<br/>coverage gate] --> S[SAST, pip-audit,<br/>gitleaks] --> V[Validate manifests,<br/>Terraform, Trivy config] --> B[Build image,<br/>Trivy scan, SBOM] --> P[Push to GHCR,<br/>cosign sign] --> U[Commit new tag<br/>to prod overlay]
+  end
+  P --> REG[(GHCR registry)]
+  U -->|3. git commit| GH
+  GH -->|4. Argo CD syncs| ARGO
+  subgraph K8S[Kubernetes cluster - provisioned by Terraform]
+    direction TB
+    ARGO[Argo CD] --> RO[Argo Rollouts<br/>canary 20 - 50 - 100%]
+    USER([Users]) --> ING[ingress-nginx] --> RO
+    RO --> PODS[TaskFlow pods<br/>non-root, read-only FS<br/>HPA, PDB, NetworkPolicy]
+    PODS -->|/metrics| PROM[Prometheus + Alertmanager]
+    PROM -->|success-rate gate:<br/>abort and roll back| RO
+    PODS -->|JSON logs| LOKI[Promtail + Loki]
+    PROM --> GRAF[Grafana]
+    LOKI --> GRAF
+    PROM -->|alerts| AM[Alert receiver]
+  end
+  REG -.->|image pull| PODS
+  TF[Terraform + Ansible] -.->|provision| K8S
