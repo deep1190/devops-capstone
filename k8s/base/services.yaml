@@ -1,0 +1,25 @@
+# Two Services over the same pods; Argo Rollouts injects the pod-template-hash
+# selector so "stable" always points at the proven ReplicaSet and "canary" at the new one.
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskflow-stable
+  labels: {app: taskflow, app.kubernetes.io/part-of: taskflow}
+spec:
+  selector: {app: taskflow}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskflow-canary
+  labels: {app: taskflow, app.kubernetes.io/part-of: taskflow}
+spec:
+  selector: {app: taskflow}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

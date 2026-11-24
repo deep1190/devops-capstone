@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: taskflow
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - rollout.yaml
+  - services.yaml
+  - ingress.yaml
+  - analysistemplate.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - resources.yaml
+  - servicemonitor.yaml
+  - prometheusrule.yaml
+# Grafana's sidecar auto-loads any ConfigMap labelled grafana_dashboard=1.
+# taskflow-dashboard.json is a copy of monitoring/dashboards/taskflow.json (CI checks they match).
+configMapGenerator:
+  - name: taskflow-dashboard
+    files:
+      - taskflow.json=taskflow-dashboard.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+images:
+  - name: ghcr.io/YOUR_GH_USER/taskflow
+    newTag: latest

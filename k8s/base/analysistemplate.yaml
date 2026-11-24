@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: taskflow-success-rate
+spec:
+  args:
+    - name: service-name
+      value: taskflow-canary
+  metrics:
+    - name: success-rate
+      interval: 20s
+      failureLimit: 1
+      # No traffic yet (empty/NaN result) is not treated as a failure.
+      successCondition: len(result) == 0 || isNaN(result[0]) || result[0] >= 0.95
+      provider:
+        prometheus:
+          address: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            sum(rate(taskflow_http_requests_total{service="{{args.service-name}}",status!~"5.."}[1m]))
+            /
+            sum(rate(taskflow_http_requests_total{service="{{args.service-name}}"}[1m]))

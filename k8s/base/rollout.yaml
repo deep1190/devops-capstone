@@ -1,0 +1,79 @@
+# Argo Rollouts canary: 20% -> 50% -> 100% of traffic through ingress-nginx.
+# A background Prometheus analysis runs during the rollout; if the canary's
+# success rate drops below 95% the rollout aborts and traffic returns to stable.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: taskflow
+  labels:
+    app: taskflow
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: taskflow
+  strategy:
+    canary:
+      stableService: taskflow-stable
+      canaryService: taskflow-canary
+      trafficRouting:
+        nginx:
+          stableIngress: taskflow
+      analysis:
+        startingStep: 1
+        templates:
+          - templateName: taskflow-success-rate
+        args:
+          - name: service-name
+            value: taskflow-canary
+      steps:
+        - setWeight: 20
+        - pause: {duration: 60s}
+        - setWeight: 50
+        - pause: {duration: 60s}
+        - setWeight: 100
+  template:
+    metadata:
+      labels:
+        app: taskflow
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: taskflow
+          image: ghcr.io/YOUR_GH_USER/taskflow:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: taskflow-config
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

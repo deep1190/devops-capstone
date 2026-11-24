@@ -1,0 +1,54 @@
+{
+  "uid": "taskflow-overview",
+  "title": "TaskFlow - Service Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-30m", "to": "now"},
+  "tags": ["taskflow", "capstone"],
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Request rate by status (req/s)",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (status) (rate(taskflow_http_requests_total[1m]))", "legendFormat": "{{status}}"}]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Error ratio (5xx %)",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 5}]}}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "100 * sum(rate(taskflow_http_requests_total{status=~\"5..\"}[1m])) / clamp_min(sum(rate(taskflow_http_requests_total[1m])), 0.001)", "legendFormat": "5xx %"}]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Latency p50 / p95 / p99 (s)",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "targets": [
+        {"refId": "A", "expr": "histogram_quantile(0.50, sum by (le) (rate(taskflow_http_request_duration_seconds_bucket[1m])))", "legendFormat": "p50"},
+        {"refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(taskflow_http_request_duration_seconds_bucket[1m])))", "legendFormat": "p95"},
+        {"refId": "C", "expr": "histogram_quantile(0.99, sum by (le) (rate(taskflow_http_request_duration_seconds_bucket[1m])))", "legendFormat": "p99"}
+      ]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Tasks stored",
+      "gridPos": {"x": 12, "y": 8, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(taskflow_tasks_total)"}]
+    },
+    {
+      "id": 5, "type": "stat", "title": "Running versions",
+      "gridPos": {"x": 18, "y": 8, "w": 6, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "options": {"textMode": "name"},
+      "targets": [{"refId": "A", "expr": "taskflow_build_info", "legendFormat": "{{version}}"}]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Requests by version/instance (canary visibility)",
+      "gridPos": {"x": 12, "y": 12, "w": 12, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (instance) (rate(taskflow_http_requests_total[1m]))", "legendFormat": "{{instance}}"}]
+    }
+  ]
+}
