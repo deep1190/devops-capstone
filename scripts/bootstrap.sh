@@ -1,24 +1,23 @@
 #!/usr/bin/env bash
 # One-command platform bring-up: cluster + ingress + Argo + monitoring + logging + app.
 # Prereqs: docker, terraform, kubectl (see ansible/bootstrap-host.yml).
+# The GitHub repo is detected from `git remote origin`; nothing needs editing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-: "${GH_USER:?export GH_USER=<your github username>}"
+REMOTE="$(git remote get-url origin 2>/dev/null || true)"
+SLUG="$(echo "$REMOTE" | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')"
+[ -n "$SLUG" ] || { echo "No git remote 'origin'. Push this repo to GitHub first."; exit 1; }
 export TF_VAR_grafana_admin_password="${TF_VAR_grafana_admin_password:-$(openssl rand -base64 18)}"
-
-echo "==> Pointing manifests at your GitHub user ($GH_USER)"
-grep -rl YOUR_GH_USER k8s argocd .github 2>/dev/null | xargs -r sed -i "s/YOUR_GH_USER/${GH_USER,,}/g" || true
 
 echo "==> Terraform: cluster + platform components"
 terraform -chdir=terraform init -input=false
 terraform -chdir=terraform apply -auto-approve -input=false
-
 export KUBECONFIG="$(terraform -chdir=terraform output -raw kubeconfig_path)"
 
-echo "==> Alert receiver + GitOps application"
+echo "==> Alert receiver + GitOps application for $SLUG"
 kubectl apply -f monitoring/alert-sink.yaml
-kubectl apply -f argocd/application.yaml
+sed "s#YOUR_GH_USER/devops-capstone#${SLUG}#" argocd/application.yaml | kubectl apply -f -
 
 echo "==> Waiting for the rollout to become healthy"
 kubectl -n taskflow wait --for=condition=available rollout/taskflow --timeout=300s || \

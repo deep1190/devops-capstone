@@ -9,7 +9,6 @@ BASE="${1:-http://taskflow.local}"
 echo "==> Simulating a bad release: 60% of API calls will fail"
 kubectl -n $NS patch configmap taskflow-config --type merge -p '{"data":{"FAIL_RATE":"0.6"}}'
 # Force a new ReplicaSet (config changes alone don't roll pods).
-kubectl argo rollouts -n $NS set image taskflow taskflow=ghcr.io/${GH_USER:?export GH_USER}/taskflow:latest || true
 kubectl argo rollouts -n $NS restart taskflow
 
 echo "==> Sending traffic for 3 minutes while the canary is analysed"

@@ -1,5 +1,7 @@
 # TaskFlow DevOps Platform - End-to-End Delivery Capstone
 
+**Deepika Gupta** | Roll no. 2301730274 | B.Tech CSE (AI/ML), Section D
+
 A complete, reproducible DevOps platform that takes a small REST service (**TaskFlow API**) from
 `git push` to a **canary production rollout on Kubernetes**, with observability, security and
 recoverability built in.
@@ -53,23 +55,33 @@ docker compose up --build -d
 # Grafana http://localhost:3000   Prometheus http://localhost:9090
 ```
 
-### 3. Full platform on Kubernetes (kind)
-Prerequisites: Docker, Terraform >= 1.6, kubectl, openssl (`ansible-playbook ansible/bootstrap-host.yml` installs them on Ubuntu).
-
+### 3. Zero-setup: just push to GitHub
+Create an empty repository on GitHub, then:
 ```bash
-# 1. Fork/push this repo to GitHub, enable Actions, and make the GHCR package public.
-export GH_USER=<your-github-username>
-./scripts/bootstrap.sh          # replaces YOUR_GH_USER, runs terraform, installs Argo CD application
-git add -A && git commit -m "chore: set github user" && git push   # let Argo CD read the real repo URL
+git remote add origin https://github.com/<your-username>/<repo>.git
+git push -u origin main
+```
+Open the **Actions** tab. The pipeline needs **no secrets and no edits** and runs these jobs:
+1. lint + unit tests + SAST, 2. validate Docker/Kubernetes/Prometheus/Terraform files, 3. build, container-smoke-test and publish the image to GHCR,
+4. **deploy to a real Kubernetes cluster (kind) inside the runner** and smoke-test it through a Service, 5. GitOps commit of the new image tag.
+Each job writes a summary and uploads evidence (test reports, Kubernetes state, pod logs, metrics) as downloadable artifacts.
 
-# 2. Access
+### 4. (Optional) Full platform on your own machine (kind + Argo + Prometheus + Grafana + Loki)
+Prerequisites: Docker, Terraform >= 1.6, kubectl, openssl (`ansible-playbook ansible/bootstrap-host.yml` installs them on Ubuntu).
+```bash
+./scripts/bootstrap.sh          # detects your GitHub repo from `git remote`, runs Terraform, installs the Argo CD app
 echo "127.0.0.1 taskflow.local" | sudo tee -a /etc/hosts
 ./scripts/smoke-test.sh http://taskflow.local
 kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80
-kubectl argo rollouts dashboard -n taskflow
+```
+For the cluster to pull your image, make the GHCR package public (GitHub -> Packages -> taskflow -> Settings -> Change visibility).
+
+### 5. Check everything locally without Docker or a cluster
+```bash
+./scripts/run-ci-locally.sh     # lint, tests, canary decision simulation, plus any validators you have installed
 ```
 
-### 4. Demonstrations for the evaluation
+### 6. Demonstrations for the evaluation
 | Demo | Command | Expected |
 |---|---|---|
 | Successful canary | push any change to `main` | pipeline green, Rollouts steps 20->50->100 |
@@ -78,6 +90,9 @@ kubectl argo rollouts dashboard -n taskflow
 | Alert | run failure demo; watch `TaskflowHighErrorRate` | alert in Alertmanager, payload in `alert-sink` logs |
 | Self-healing | `kubectl -n taskflow delete pod -l app=taskflow` | pods recreated, zero downtime (PDB + replicas) |
 | Log query | Grafana -> Explore -> Loki: `{namespace="taskflow"} \| json \| level="ERROR"` | structured error logs with `request_id` |
+
+## Proof / screenshots
+Real screenshots and charts from running this code are in [`docs/screenshots/`](docs/screenshots) and are embedded in the report `docs/Capstone_Report_DevOps_Platform.docx`.
 
 ## Sample data and logs
 Real outputs from running this code are in [`docs/evidence/`](docs/evidence): unit-test run, smoke test,

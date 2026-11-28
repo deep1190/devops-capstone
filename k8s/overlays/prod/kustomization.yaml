@@ -4,7 +4,8 @@ resources:
   - ../../base
 # CI rewrites newTag with the commit SHA; Argo CD then syncs this overlay (GitOps).
 images:
-  - name: ghcr.io/YOUR_GH_USER/taskflow
+  - name: taskflow
+    newName: ghcr.io/OWNER_PLACEHOLDER/taskflow
     newTag: latest
 patches:
   - target: {kind: Rollout, name: taskflow}

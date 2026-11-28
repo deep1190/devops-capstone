@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskflow
+  namespace: taskflow-ci
+  labels: {app: taskflow}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: taskflow}
+  template:
+    metadata:
+      labels: {app: taskflow}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: taskflow
+          image: taskflow:ci
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 8080}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 3
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskflow
+  namespace: taskflow-ci
+spec:
+  selector: {app: taskflow}
+  ports:
+    - {name: http, port: 80, targetPort: http}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: taskflow
+  namespace: taskflow-ci
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: taskflow}

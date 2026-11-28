@@ -1,0 +1,6 @@
+# Used by the CI "e2e-kubernetes" job: plain Deployment (no CRDs needed) on a throw-away kind cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - deployment.yaml

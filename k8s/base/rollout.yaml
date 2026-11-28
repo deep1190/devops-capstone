@@ -47,7 +47,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: taskflow
-          image: ghcr.io/YOUR_GH_USER/taskflow:latest
+          image: taskflow:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

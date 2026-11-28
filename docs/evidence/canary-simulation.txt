@@ -1,0 +1,10 @@
+
+=== Scenario: healthy release (canary FAIL_RATE=0.0) ===
+setWeight  20%  canary success rate =     100.0%  (threshold 95%)  -> OK
+setWeight  50%  canary success rate =     100.0%  (threshold 95%)  -> OK
+setWeight 100%  canary success rate =     100.0%  (threshold 95%)  -> OK
+RESULT: all steps passed -> canary PROMOTED to 100% (new version is now stable)
+
+=== Scenario: faulty release (canary FAIL_RATE=0.6) ===
+setWeight  20%  canary success rate =      46.5%  (threshold 95%)  -> FAIL
+RESULT: AnalysisRun FAILED -> rollout ABORTED, 100% of traffic returned to the STABLE version

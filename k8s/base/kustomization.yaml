@@ -24,6 +24,3 @@ configMapGenerator:
       disableNameSuffixHash: true
       labels:
         grafana_dashboard: "1"
-images:
-  - name: ghcr.io/YOUR_GH_USER/taskflow
-    newTag: latest
