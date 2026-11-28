@@ -1,7 +1,7 @@
 ============================= test session starts ==============================
 platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
 cachedir: .pytest_cache
-rootdir: /home/claude/devops-capstone/app
+rootdir: project/app
 plugins: platformdirs-4.13.5, anyio-4.15.1
 collecting ... collected 16 items
 
@@ -23,3 +23,4 @@ tests/test_app.py::test_fail_rate_injects_500s_on_api_only PASSED        [ 93%]
 tests/test_app.py::test_version_endpoint PASSED                          [100%]
 
 ============================== 16 passed in 0.18s ==============================
+
